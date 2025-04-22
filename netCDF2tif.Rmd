@@ -1,0 +1,51 @@
+---
+title: "Como abrir un archivo '.nc' y convertirlo a tif?"
+author: "Juan L. Parra"
+date: "2024-06-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## El formato netCDF o '.nc'
+
+El formato netCDF (Network Common Data Form por sus siglas en ingles, o Formulario de datos comunes en red) es un formato (y una serie de herramientas alrededor) que permite compartir sets de datos multidimensionales (multiples variables como temperatura, humedad, precipitacion, ...), en los que cada variable a su vez puede expresarse en series de tiempo. Una de las ventajas de este formato es que incluye sus propios metadatos, lo que hace que la informacion no se desconecte de sus metadatos. Es un formato que inicialmente fue propuesto por la NASA para manejar y compartir grandes cantidades de informacion y ha sido acogido por muchas otras fuentes actualmente, sobre todo en el campo de la meteorologia. 
+
+## Es posible abrir un archivo netCDF en R?
+
+Actualmente (2024) si, mediante el paquete terra, con la misma funcion con la que se leen los rasters ($rast$). La diferencia, es que el objeto que se lee, no queda como un raster sencillo, sino que queda como una lista de rasters a los que se debe acceder a traves de su nombre. Es posible que esta funcion no aplique para todos los tipos de archivo netCDF (hay varios formatos a traves de la historia). Aca les muestro un ejemplo de un archivo netCDF descargado de la [pagina de la Iniciativa de Cambio Climatico de la Agencia Espacial Europea](https://maps.elie.ucl.ac.be/CCI/viewer/).
+
+```{r p1}
+library(terra)
+setwd("C:/Users/Juan Luis Parra/Dropbox/GIS/Shapes/GlobalLandcover")
+#el archivo es una capa global de uso del suelo para el año 2019
+LC2019 <- rast("C3S-LC-L4-LCCS-Map-300m-P1Y-2019-v2.1.1.nc")
+#para ver que leyo R
+dim(LC2019)
+#primer numero se refiere a las filas, el segundo a las columnas, el tercero a el numero de variables 
+#los nombres de las variables
+names(LC2019)
+#para entender estos nombres, por favor referirse al pdf con los metadatos (http://maps.elie.ucl.ac.be/CCI/viewer/download/ESACCI-LC-Ph2-PUGv2_2.0.pdf)
+#La primera variable contiene un numero que indica que categoria de uso del suelo se asigno
+#para graficar la primera variable
+plot(LC2019[names(LC2019)[1]])
+# la escala va de 0 a 220, donde cada numero indica una categoria particular
+```
+
+```{r P2 table1, echo=FALSE, results='asis'}
+library(knitr)
+leyenda <- data.frame(Numero=seq(from=0, to=220, by=10), Nombre=c("No Data", "Cultivo","Cultivo irrigado", "Cultivo Mosaico", "Mosaic vegetacion natural", "Arboles, dosel abierto","Arboles, dosel abierto a cerrado 1","Arboles, dosel abierto a cerrado 2","Arboles, dosel abierto a cerrado 3","Arboles, dosel abierto a cerrado 4","Arboles Mosaico","Herbaceo Mosaico","Arbustal","Herbaceo","LiquenMusgo","Vegetacion escasa","Arboles, inundado","Arboles, inundado, agua salada","Arbusto y herbaceo","Areas Urbanas","Areas Descubiertas","Cuerpos de agua","Nieve y Hielo"))
+kable(leyenda, caption="Leyenda para categorias en mapa de coberturas")
+```
+
+## Puedo exportar el archivo a otro formato?
+
+Claro que si. Con la funcion $writeRaster$ de terra pueden exportar cualquiera de estos archivos a otro formato. En este caso particular, al ser un archivo para el mundo entero con una resolucion espacial de 300m, lo vamos a agregar primero (bajarle la resolucion 30 veces), para asi poder tener un archivo mas manejable. Por ejemplo:
+
+```{r p3}
+#LC2019.agg <- aggregate(LC2019, fact=30, fun="modal", na.rm=TRUE, filename="LC2019_agg.tif", wopt=list(filetype="GTiff"))
+
+#writeRaster(LC2019, "LC2019.tif", filetype="GTiff")
+```
